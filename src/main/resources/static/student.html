@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps – Đề 001</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f5f7fb;color:#17243b}pre{background:white;padding:20px;border-radius:12px;overflow:auto}a{color:#165ac2}</style>
+<h1>DevOps – Đề 001</h1>
+<h2>Thông tin sinh viên và phiên bản triển khai</h2>
+<pre id="info">Đang tải…</pre>
+<h2>Danh sách phòng lab</h2>
+<p><a href="/api/labs">API phòng lab</a> · <a href="/api/info">API thông tin phiên bản</a></p>
+<pre id="labs">Đang tải…</pre>
+<script>
+async function show(endpoint, id) {
+  const target = document.getElementById(id);
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    target.textContent = JSON.stringify(await response.json(), null, 2);
+  } catch (error) { target.textContent = 'Không tải được dữ liệu: ' + error.message; }
+}
+show('/api/info', 'info');
+show('/api/labs', 'labs');
+</script>
+</html>

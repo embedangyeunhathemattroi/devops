@@ -79,7 +79,10 @@ jobs:
           BASE="http://localhost:${APP_PORT}"
           # Kiểm tra endpoint $BASE/api/labs trả về JSON (CÓ SẴN, lỗi -> pipeline FAIL)
           curl -fsS --retry 12 --retry-delay 5 --retry-all-errors --connect-timeout 5 --max-time 15 "$BASE/api/labs" -o /tmp/devops-labs.json
-          python3 -c 'import json; d=json.load(open("/tmp/devops-labs.json")); assert isinstance(d, list) and len(d) > 0; assert all(isinstance(row, dict) and "id" in row for row in d)'
+          python3 -c 'import json; d=json.load(open("/tmp/devops-labs.json")); assert isinstance(d, list) and len(d) == 8; assert all(isinstance(row, dict) and "id" in row for row in d)'
+          curl -fsS "$BASE/api/info" -o /tmp/devops-info.json
+          python3 -c 'import json,os; d=json.load(open("/tmp/devops-info.json")); assert d["appVersion"] == os.environ["GITHUB_SHA"]; assert d["studentId"] == os.environ["STUDENT_ID"]; assert d["studentName"] == os.environ["STUDENT_NAME"]'
+          curl -fsS "$BASE/student.html" -o /dev/null
           echo "Smoke test OK"
 
       - name: In log khi lỗi
@@ -159,6 +162,9 @@ jobs:
             test -n "$APP_PORT"
             curl -fsS --retry 12 --retry-delay 5 --retry-all-errors --connect-timeout 5 --max-time 15 "http://127.0.0.1:${APP_PORT}/api/labs" -o "$DOCKER_CONFIG/labs.json"
             grep -q '"id"' "$DOCKER_CONFIG/labs.json"
+            curl -fsS "http://127.0.0.1:${APP_PORT}/api/info" -o "$DOCKER_CONFIG/info.json"
+            grep -Fq "$APP_TAG" "$DOCKER_CONFIG/info.json"
+            curl -fsS "http://127.0.0.1:${APP_PORT}/student.html" -o /dev/null
             # Xác nhận container đang dùng đúng image đã pull theo commit SHA.
             APP_CONTAINER=$(docker compose --env-file student.env ps -q app)
             test -n "$APP_CONTAINER"

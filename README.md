@@ -1,8 +1,8 @@
-﻿# DevOps Final – Đề 001: hướng dẫn Terminal IntelliJ
+# DevOps Final – Đề 001: hướng dẫn Terminal IntelliJ
 
 Dùng **Terminal IntelliJ → PowerShell**. Sau `ssh`, chính terminal đó chạy lệnh Linux trên server; `exit` để về Windows. Thay TEN_GITHUB, TEN_REPO, USER_SERVER, IP_SERVER bằng thông tin thật. GitHub Secrets, ảnh minh chứng và website cần thao tác giao diện.
 
-**Đã kiểm tra local:** API trả đủ 8 phòng lab. Chưa xác nhận pipeline/server. Không bảo đảm điểm 80–90: ứng dụng hiện còn thiếu hiển thị thông tin sinh viên và SHA trên website theo đề; kiểm tra image SHA trong workflow không thay thế yêu cầu này.
+**Đã kiểm tra local:** API trả đủ 8 phòng lab. Trang `/student.html` hiển thị thông tin sinh viên, danh sách phòng lab và APP_VERSION; `/api/info` cung cấp thông tin phiên bản dạng JSON. CI kiểm tra SHA thực tế từ ứng dụng. Điểm cuối cùng phụ thuộc rubric và minh chứng triển khai.
 
 Kiến trúc: trình duyệt → Nginx (APP_PORT:80) → Spring Boot (8080) → MySQL (3306, không public).
 
@@ -128,7 +128,7 @@ docker ps phải chạy được không cần sudo. Thiếu quyền/công cụ t
 **Về PowerShell**, kiểm tra key mới:
 
 ```powershell
-sh -i .\deploy_key -p 22 root@221.121.5.186
+ssh -i .\deploy_key -p 22 root@221.121.5.186
 ```
 
 Đăng nhập được thì gõ `exit`.
@@ -140,7 +140,7 @@ Repo → Settings → Secrets and variables → Actions → New repository secre
 | Secret | Giá trị |
 |---|---|
 | SERVER_HOST | 221.121.5.186 |
-| SERVER_USER | Troot  |
+| SERVER_USER | root |
 | SERVER_SSH_KEY | Toàn bộ private key deploy_key, gồm BEGIN/END |
 
 Copy key để dán trực tiếp vào secret:
@@ -201,7 +201,7 @@ Nếu cần đăng nhập GitHub, hoàn tất cửa sổ xác thực. Nếu push
 GitHub → Actions → CI/CD: cả Build & Test và Deploy lên server phải xanh. Job đỏ: mở bước đỏ xem log để sửa. Pipeline tự build/test, push SHA/latest lên GHCR, pull image trên server và up --no-build; không cần tự push Docker.
 
 ```powershell
-ssh -i .\deploy_key USER_SERVER@IP_SERVER
+ssh -i .\deploy_key -p 22 root@221.121.5.186
 ```
 
 Trên server:
@@ -269,5 +269,5 @@ Server phải có commit minh chứng mới nhất trước khi tải. Sau đó 
 - Compose context `.` vì Dockerfile cùng thư mục; DB qua biến, chỉ public Nginx, mount read-only.
 - Hai job xanh, image SHA/latest, deploy không build trên server.
 - Website server trả JSON, đủ bốn ảnh, submission-content và link RAIA trước hạn.
-- Còn thiếu ở ứng dụng hiện tại: hiển thị sinh viên và SHA trên website; cần bổ sung ứng dụng/cấu hình để đáp ứng đầy đủ, không chỉ sửa README hoặc bỏ smoke test.
+- Mở `/student.html` để chụp thông tin sinh viên, SHA và 8 phòng lab; đối chiếu SHA với run Actions. `/` vẫn chuyển tới `/api/labs`.
 
