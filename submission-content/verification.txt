@@ -1,0 +1,34 @@
+﻿VERIFICATION — 2026-11-20 (Asia/Bangkok)
+Repository: https://github.com/embedangyeunhathemattroi/devops
+Verified deployment SHA: c2a12b28fb7d2321641f6a988377c118b45c6700
+Successful CI/CD: https://github.com/embedangyeunhathemattroi/devops/actions/runs/44731418403
+Build & Test: success; Deploy: success.
+Registry login and push of SHA/latest: successful in the Build & Test job.
+Direct package metadata API was not accessible with the available credential (HTTP 403).
+
+MYSQL REPAIR
+Backups were saved outside the repository under /root/devops-db-backup-*.sql on the server.
+Only app_user@% was synchronized to the configured application password.
+Root credentials were NOT changed. Existing administrator credentials remain required for administration.
+Verified app_user login over TCP and SELECT COUNT(*) FROM labs = 8.
+The new healthcheck performs a real authenticated SELECT 1; deployment passed after recreation.
+
+SERVER CHECKS
+/root/devops, Compose project phamngoclinh-de001, Nginx port 8089.
+Server /api/labs: 8 records. /api/info: B24DTCN360 and deployment SHA above.
+info-server.json and labs-server.json were fetched from the server through SSH tunnel localhost:18089.
+03-compose-ps.txt: actual SSH command output. 03-compose-ps.png: browser rendering of that exact output, not a screenshot of IntelliJ.
+04-website-tunnel.png: actual headless browser capture of server /student.html through SSH tunnel, not public connectivity proof.
+01-actions.json: job statuses from GitHub API.
+
+USER-SUPPLIED IMAGES
+user-provided/01-actions-old-repo.png, 02-ghcr-old-repo.png and 03-compose-old-repo.png refer to devops-final-de001-phamngoclinh, SHA 0a2a190..., port 8088.
+user-provided/04-website-local.png refers to localhost:8089, SHA 3cfb43e...
+Original images are retained unchanged. They do not prove the current deployment.
+
+REMAINING SUBMISSION CONDITIONS
+Public http://221.121.5.186:8089 timed out from the client; no matching packets reached server eth0 during the probe. Check upstream/provider firewall or the client network. Server loopback and SSH tunnel work.
+Capture four matching screenshots after public access is available, including the browser address bar.
+The current repository name is devops; the exam specifies devops-final-de001-phamngoclinh. That named repository already exists separately, so no rename/overwrite was performed.
+Push to GitHub is not submission to RAIA/LMS. The student must upload via their course account before the deadline.
+An evidence-only commit after this snapshot has a new SHA and starts another workflow. The snapshot above intentionally identifies the run it proves.

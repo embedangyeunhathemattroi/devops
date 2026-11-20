@@ -1,0 +1,66 @@
+﻿[
+    {
+        "building":  "A1",
+        "capacity":  40,
+        "equipment":  "MÃ¡y chá»§ Dell R740, Switch Cisco",
+        "id":  1,
+        "labName":  "DevOps Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    },
+    {
+        "building":  "A1",
+        "capacity":  35,
+        "equipment":  "Cá»¥m Proxmox 3 node",
+        "id":  2,
+        "labName":  "Cloud Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    },
+    {
+        "building":  "A2",
+        "capacity":  30,
+        "equipment":  "Router Cisco 4321",
+        "id":  3,
+        "labName":  "Network Lab",
+        "status":  "Báº£o trÃ¬"
+    },
+    {
+        "building":  "A3",
+        "capacity":  25,
+        "equipment":  "GPU NVIDIA RTX 4090",
+        "id":  4,
+        "labName":  "AI Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    },
+    {
+        "building":  "A2",
+        "capacity":  30,
+        "equipment":  "Raspberry Pi, Arduino",
+        "id":  5,
+        "labName":  "IoT Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    },
+    {
+        "building":  "A3",
+        "capacity":  20,
+        "equipment":  "Firewall FortiGate 60F",
+        "id":  6,
+        "labName":  "Security Lab",
+        "status":  "Táº¡m ÄÃ³ng"
+    },
+    {
+        "building":  "B1",
+        "capacity":  45,
+        "equipment":  "MacBook Pro, iPhone 15",
+        "id":  7,
+        "labName":  "Mobile Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    },
+    {
+        "building":  "B1",
+        "capacity":  40,
+        "equipment":  "MÃ¡y tráº¡m HP Z4",
+        "id":  8,
+        "labName":  "Data Lab",
+        "status":  "Hoáº¡t Äá»ng"
+    }
+]

@@ -1,0 +1,5 @@
+﻿c2a12b28fb7d2321641f6a988377c118b45c6700
+NAME                         IMAGE                                                                                  COMMAND                  SERVICE   CREATED              STATUS                        PORTS
+phamngoclinh-de001-app-1     ghcr.io/embedangyeunhathemattroi/devops/app:c2a12b28fb7d2321641f6a988377c118b45c6700   "java -jar /app/app.…"   app       About a minute ago   Up About a minute             8080/tcp
+phamngoclinh-de001-mysql-1   mysql:8.0                                                                              "docker-entrypoint.s…"   mysql     About a minute ago   Up About a minute (healthy)   3306/tcp, 33060/tcp
+phamngoclinh-de001-nginx-1   nginx:1.27-alpine                                                                      "/docker-entrypoint.…"   nginx     53 minutes ago       Up About a minute             0.0.0.0:8089->80/tcp, [::]:8089->80/tcp

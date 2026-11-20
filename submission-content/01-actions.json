@@ -1,0 +1,14 @@
+﻿[
+    {
+        "name":  "Build \u0026 Test",
+        "status":  "completed",
+        "conclusion":  "success",
+        "html_url":  "https://github.com/embedangyeunhathemattroi/devops/actions/runs/44731418403/job/136271842913"
+    },
+    {
+        "name":  "Deploy lên server",
+        "status":  "completed",
+        "conclusion":  "success",
+        "html_url":  "https://github.com/embedangyeunhathemattroi/devops/actions/runs/44731418403/job/136272558935"
+    }
+]
