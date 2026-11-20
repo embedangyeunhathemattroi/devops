@@ -1,273 +1,216 @@
-# DevOps Final – Đề 001: hướng dẫn Terminal IntelliJ
+﻿# DevOps Đề 001 — làm nhanh trong 60 phút bằng Terminal IntelliJ
 
-Dùng **Terminal IntelliJ → PowerShell**. Sau `ssh`, chính terminal đó chạy lệnh Linux trên server; `exit` để về Windows. Thay TEN_GITHUB, TEN_REPO, USER_SERVER, IP_SERVER bằng thông tin thật. GitHub Secrets, ảnh minh chứng và website cần thao tác giao diện.
+## 1. Thông tin đúng của bản đang làm
 
-**Đã kiểm tra local:** API trả đủ 8 phòng lab. Trang `/student.html` hiển thị thông tin sinh viên, danh sách phòng lab và APP_VERSION; `/api/info` cung cấp thông tin phiên bản dạng JSON. CI kiểm tra SHA thực tế từ ứng dụng. Điểm cuối cùng phụ thuộc rubric và minh chứng triển khai.
+- Sinh viên: **Pham Ngoc Linh — B24DTCN360 — K24CNTT4**.
+- Repo hiện tại: https://github.com/embedangyeunhathemattroi/devops (public, nhánh `main`).
+- Server: `root@221.121.5.186`, thư mục `/root/devops`.
+- Project Compose: `phamngoclinh-de001`; cổng **8089**.
+- API: http://221.121.5.186:8089/api/labs
+- Trang sinh viên/SHA: http://221.121.5.186:8089/student.html
+- Actions: https://github.com/embedangyeunhathemattroi/devops/actions
 
-Kiến trúc: trình duyệt → Nginx (APP_PORT:80) → Spring Boot (8080) → MySQL (3306, không public).
+Chỉ triển khai từ repo/thư mục này. Repo cũ `devops-final-de001-phamngoclinh` dùng cùng tên Compose project: chạy lại pipeline cũ có thể thay container của bài hiện tại, đổi cổng và gây lệch mật khẩu. Nếu đề bắt buộc tên repo `devops-final-de001-HOTENKHONGDAU`, phải thống nhất repo nộp với giảng viên; repo hiện tại vẫn tên `devops`.
 
-## 1. Chuẩn bị
+**Nguyên nhân lỗi đã xử lý:** volume MySQL giữ tài khoản của lần chạy cũ; sửa `student.env` không đổi mật khẩu trong database. Đã sao lưu database trên server và đồng bộ riêng `app_user`, giữ dữ liệu 8 phòng lab. Mật khẩu quản trị cũ được giữ nguyên. Healthcheck mới thực sự đăng nhập và chạy `SELECT 1`, thay vì chỉ ping MySQL.
 
-- Bật Docker Desktop (Linux containers); máy cần Git và OpenSSH.
-- Server cần Git, curl, Docker Compose v2; tài khoản SSH riêng thuộc nhóm docker.
-- Tạo repo GitHub **public**, tên `devops-final-de001-HOTENKHONGDAU`, không tạo README sẵn; nhánh main.
-- Điền đủ student.env: tên, mã SV, lớp, email, GitHub username, port, project, tài khoản/mật khẩu MySQL.
-- Giữ `EXAM_CODE="001"`, `MYSQL_DATABASE="ptit_lab_db"`. Project dạng `tenviettat-de001`, viết thường.
-- APP_PORT từ 8080 đến 65535, không trùng người khác. Ví dụ dưới dùng **8089**; đổi port thì thay cả URL.
-- Giữ Nginx `listen 80`, upstream `app:8080`; `/` redirect tới `/api/labs`.
+Không có quy trình bảo đảm tuyệt đối không lỗi hoặc chắc chắn 80 điểm. Các bước dưới giảm thao tác thừa và chỉ rõ nơi cần kiểm tra.
 
-Chạy tại thư mục chứa Dockerfile, student.env và docker-compose.yml:
+## 2. Chia 60 phút và kiểm tra trước (0–5 phút)
+
+| Thời gian | Việc làm |
+|---|---|
+| 0–5 phút | Docker, thư mục, SSH, thông tin sinh viên |
+| 5–15 phút | Build local, kiểm tra 8 phòng lab |
+| 15–30 phút | Push, chờ hai job CI/CD |
+| 30–40 phút | Kiểm tra server và truy cập từ máy cá nhân |
+| 40–50 phút | Chụp 4 ảnh đúng repo/SHA/IP |
+| 50–60 phút | Push minh chứng, kiểm tra run cuối, nộp |
+
+Mở **IntelliJ → Terminal → PowerShell**. Chỉ copy phần lệnh trong khối, không copy dấu nhắc terminal. Sau `ssh`, terminal chuyển sang Linux; gõ `exit` để trở lại PowerShell.
 
 ```powershell
 cd "C:\Users\TRONG TIN\Downloads\devops-final-app-de001\devops-final-app-de001"
-git --version
+git status --short
+git remote -v
 docker version
 docker compose version
-```
-
-## 2. Chạy Docker và xem JSON
-
-```powershell
 docker compose --env-file student.env config --quiet
+ssh -o ConnectTimeout=10 -i .\deploy_key root@221.121.5.186 "docker compose version"
+```
+
+Docker lỗi kết nối: bật Docker Desktop, đợi engine sẵn sàng rồi chạy lại. `config --quiet` thành công không in gì. Không chạy `git init`, không tạo lại SSH key hoặc Secrets nếu bài đã cấu hình.
+
+## 3. Chốt cấu hình một lần để tránh lỗi mật khẩu
+
+Mở `student.env` trong IntelliJ, kiểm tra tên, mã SV, lớp, email, GitHub. Giữ:
+
+```dotenv
+GITHUB_USERNAME="embedangyeunhathemattroi"
+EXAM_CODE="001"
+APP_PORT="8089"
+COMPOSE_PROJECT_NAME="phamngoclinh-de001"
+MYSQL_DATABASE="ptit_lab_db"
+MYSQL_USER="app_user"
+```
+
+- Giữ nguyên mật khẩu DB sau khi đã tạo volume. Nếu cần đổi, phải đổi trong MySQL và cấu hình cùng lúc; chỉ sửa env là chưa đủ.
+- Luôn thêm `--env-file student.env` vào lệnh Compose.
+- Không đổi tên project giữa chừng; tên project quyết định container/network/volume.
+- Không chạy hai repo khác nhau có cùng project trên một server.
+- Không chạy `down -v` trên server: lệnh đó xóa database. Khởi động lại bình thường không cần `down`.
+- Chỉ dùng mật khẩu riêng cho bài; không dùng lại mật khẩu cá nhân trong file được commit.
+
+## 4. Build và kiểm tra local (5–15 phút)
+
+```powershell
+$env:APP_VERSION = git rev-parse HEAD
 docker compose --env-file student.env up -d --build --wait --wait-timeout 300
-docker compose --env-file student.env ps
-curl.exe -f --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 http://localhost:8089/api/labs
-Start-Process "http://localhost:8089/api/labs"
-```
-
-`config --quiet` không in gì và không báo lỗi là hợp lệ. `--wait` không thay thế kiểm tra HTTP khi app chưa có healthcheck. Phải thấy JSON danh sách 8 phòng lab.
-
-## 3. Sửa lỗi Docker an toàn
-
-Đọc log trước:
-
-```powershell
-docker compose --env-file student.env ps
-docker compose --env-file student.env logs --tail 100 app nginx mysql
-```
-
-| Lỗi | Xử lý |
-|---|---|
-| Không kết nối Docker engine | Bật Docker Desktop, chờ sẵn sàng |
-| Port already allocated | Chọn APP_PORT khác trong env rồi chạy lại up; không dừng dịch vụ người khác |
-| 502 lúc mới khởi động | Chạy curl có retry ở phần 2; nếu vẫn lỗi, đọc log app |
-| Access denied for user | Kiểm tra tài khoản/mật khẩu MySQL theo hướng dẫn bên dưới |
-| Nginx lỗi sau khi thay container app | Chạy lệnh restart nginx bên dưới rồi kiểm tra API |
-
-```powershell
+if ($LASTEXITCODE -ne 0) { throw "Docker chưa sẵn sàng: xem mục 7" }
 docker compose --env-file student.env restart nginx
+curl.exe -fsS --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 http://localhost:8089/api/labs
+$rooms = Invoke-RestMethod -TimeoutSec 10 http://localhost:8089/api/labs
+if ($rooms.Count -ne 8) { throw "Phải có đúng 8 phòng lab" }
+Invoke-RestMethod -TimeoutSec 10 http://localhost:8089/api/info
+Start-Process "http://localhost:8089/student.html"
 ```
 
-**Lỗi đã gặp:** `Access denied for user 'app_user' ... (using password: YES)` nghĩa là MySQL từ chối đăng nhập. App không khởi động được nên Nginx trả 502. Compose truyền MYSQL_PASSWORD trong env thành DB_PASSWORD của app. Có thể database cũ giữ mật khẩu khác; sửa env không tự đổi mật khẩu đã lưu. `using password: YES` chỉ nghĩa là có gửi mật khẩu.
+`APP_VERSION` ở local là HEAD tại thời điểm build. Nếu vừa sửa mã chưa commit thì chưa được dùng ảnh local để khẳng định mã trùng commit. Minh chứng nộp lấy từ server sau pipeline xanh.
 
-**Chỉ nếu database local là dữ liệu mẫu được phép xóa**, tạo lại bằng:
+## 5. Push và CI/CD (15–30 phút)
 
-```powershell
-# CẢNH BÁO: -v xóa database của project hiện tại.
-docker compose --env-file student.env down -v
-docker compose --env-file student.env up -d --build --wait --wait-timeout 300
-curl.exe -f --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 http://localhost:8089/api/labs
-```
-
-MySQL tạo lại tài khoản từ env và chạy database/init.sql để thêm 8 phòng lab. Đây là cách đã sửa thành công trên máy local.
-
-**Có dữ liệu cần giữ/server:** không dùng down -v. Sao lưu trước; khôi phục mật khẩu đúng trong env hoặc nhờ quản trị đổi mật khẩu đúng tài khoản MySQL, rồi tạo lại container app. Không đưa mật khẩu vào log/chat.
-
-Dừng/chạy bình thường, giữ database:
-
-```powershell
-docker compose --env-file student.env down
-docker compose --env-file student.env up -d --wait --wait-timeout 300
-```
-
-Tham khảo: [MySQL Docker](https://hub.docker.com/_/mysql), [Docker Compose up](https://docs.docker.com/reference/cli/docker/compose/up/).
-
-## 4. Tạo SSH key cho pipeline
-
-Chạy một lần; không ghi đè nếu đã có deploy_key. Khi hỏi passphrase, nhấn Enter hai lần:
-
-```powershell
-ssh-keygen -t ed25519 -f deploy_key
-Get-Content .\deploy_key.pub
-```
-
-Copy toàn bộ dòng public key `ssh-ed25519 ...`. Đăng nhập server:
-
-```powershell
-ssh USER_SERVER@IP_SERVER
-```
-
-Nếu server yêu cầu key có sẵn, dùng thay cho lệnh trên:
-
-```powershell
-ssh -i "C:\duong-dan\khoa-server.pem" USER_SERVER@IP_SERVER
-```
-
-**Trên server Linux**, chạy:
-
-```bash
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-cat >> ~/.ssh/authorized_keys
-```
-
-Dán dòng public key → Enter → Ctrl+D. Tiếp tục:
-
-```bash
-chmod 600 ~/.ssh/authorized_keys
-docker ps
-docker compose version
-git --version
-curl --version
-ss -ltn 'sport = :8089'
-exit
-```
-
-docker ps phải chạy được không cần sudo. Thiếu quyền/công cụ thì nhờ quản trị server xử lý trước. Nếu port đã dùng, đổi APP_PORT; mở đúng cổng trên firewall/security group.
-
-**Về PowerShell**, kiểm tra key mới:
-
-```powershell
-ssh -i .\deploy_key -p 22 root@221.121.5.186
-```
-
-Đăng nhập được thì gõ `exit`.
-
-## 5. Thêm GitHub Secrets
-
-Repo → Settings → Secrets and variables → Actions → New repository secret:
+Bài hiện tại đã có SSH key và GitHub Secrets. Chỉ khi thiết lập máy/repo mới, tạo key chưa tồn tại bằng `ssh-keygen -t ed25519 -f deploy_key`, thêm **public key** vào `~/.ssh/authorized_keys` trên server. Thêm ba Secrets trong GitHub → Settings → Secrets and variables → Actions:
 
 | Secret | Giá trị |
 |---|---|
 | SERVER_HOST | 221.121.5.186 |
 | SERVER_USER | root |
-| SERVER_SSH_KEY | Toàn bộ private key deploy_key, gồm BEGIN/END |
+| SERVER_SSH_KEY | Toàn bộ private key deploy_key |
 
-Copy key để dán trực tiếp vào secret:
+Copy private key vào clipboard, không dán vào chat/README:
 
 ```powershell
 Get-Content -Raw .\deploy_key | Set-Clipboard
 ```
 
-Không commit/nộp private key, token hoặc mật khẩu SSH. GITHUB_TOKEN được [GitHub tự cấp](https://docs.github.com/en/actions/concepts/security/github_token). Workflow hiện dùng SSH port 22, key không passphrase.
-
-## 6. Commit và push
-
-```powershell
-git init
-git branch -M main
-git remote -v
-```
-
-Chưa có origin thì chạy:
-
-```powershell
-git remote add origin https://github.com/TEN_GITHUB/TEN_REPO.git
-```
-
-Có origin nhưng sai URL thì dùng thay cho lệnh trên:
-
-```powershell
-git remote set-url origin https://github.com/TEN_GITHUB/TEN_REPO.git
-```
-
-Kiểm tra trước khi commit:
+Với bài đã cấu hình, chạy:
 
 ```powershell
 git check-ignore deploy_key
-git add .
+git add Dockerfile docker-compose.yml build.gradle settings.gradle student.env nginx src .github README.md
 git diff --cached --name-only
-git status --short
+git commit -m "Complete application and deployment"
+git push origin main
+Start-Process "https://github.com/embedangyeunhathemattroi/devops/actions"
 ```
 
-check-ignore phải in deploy_key. Danh sách staged không được có private key, .pem, token hoặc mật khẩu server. student.env phải được theo dõi vì workflow đọc file này; dùng mật khẩu DB riêng cho bài, không dùng lại mật khẩu thật ở nơi khác.
+Nếu Git báo không có thay đổi thì bỏ qua commit, không coi đó là lỗi. `deploy_key` phải được ignore và không xuất hiện trong staged files. Không force push. Chờ **Build & Test** và **Deploy lên server** đều xanh. CI tự build, kiểm tra 8 lab/thông tin sinh viên/SHA, push image SHA + latest và deploy image; không build lại trên server. `settings.gradle` đã bổ sung Maven Central để tránh lỗi tải dependency qua Plugin Portal.
+
+## 6. Kiểm tra server và đường truy cập ngoài (30–40 phút)
+
+Trong PowerShell:
 
 ```powershell
-git commit -m "Complete Docker and CI/CD configuration"
-git push -u origin main
+ssh -i .\deploy_key root@221.121.5.186
 ```
 
-Nếu Git yêu cầu danh tính, đặt đúng thông tin rồi commit lại:
-
-```powershell
-git config user.name "HO TEN CUA BAN"
-git config user.email "EMAIL_GITHUB_CUA_BAN"
-```
-
-Nếu cần đăng nhập GitHub, hoàn tất cửa sổ xác thực. Nếu push bị từ chối do remote có commit mới, không force push; kiểm tra lịch sử trước.
-
-## 7. Kiểm tra CI/CD và server
-
-GitHub → Actions → CI/CD: cả Build & Test và Deploy lên server phải xanh. Job đỏ: mở bước đỏ xem log để sửa. Pipeline tự build/test, push SHA/latest lên GHCR, pull image trên server và up --no-build; không cần tự push Docker.
-
-```powershell
-ssh -i .\deploy_key -p 22 root@221.121.5.186
-```
-
-Trên server:
+Trong Linux server:
 
 ```bash
-cd ~/TEN_REPO
+cd ~/devops
 git rev-parse HEAD
 docker compose --env-file student.env ps
-curl -f --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 http://127.0.0.1:8089/api/labs
+curl -fsS --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 http://127.0.0.1:8089/api/labs
+curl -fsS --max-time 10 http://127.0.0.1:8089/api/info
 exit
 ```
 
-Về PowerShell:
+Trở về PowerShell:
 
 ```powershell
-Start-Process "http://IP_SERVER:8089/"
+curl.exe -fsS --max-time 10 http://221.121.5.186:8089/api/labs
+Start-Process "http://221.121.5.186:8089/student.html"
 ```
 
-Curl server được nhưng browser không vào: kiểm tra IP/firewall/security group. SSH lỗi: kiểm tra key và ba secrets. GHCR denied: kiểm tra bước login và quyền package của repo.
+Phải thấy 8 phòng lab, đúng sinh viên và SHA trùng run Actions. API chạy trong server nhưng ngoài máy timeout là vấn đề cổng/firewall/security group; mở TCP **8089** trong bảng quản trị nhà cung cấp server hoặc nhờ quản trị mạng. Không reset MySQL để sửa lỗi mạng. Kiểm tra public là bước riêng, pipeline xanh không tự chứng minh cổng bên ngoài đã mở.
 
-## 8. Minh chứng và nộp bài
+Nếu cần xem tạm bản server khi cổng public chưa mở, mở terminal thứ hai:
 
-Lưu ảnh thật vào screenshots/:
+```powershell
+ssh -N -L 18089:127.0.0.1:8089 -i .\deploy_key root@221.121.5.186
+```
 
-| File | Nội dung |
+Giữ terminal đó chạy, mở `http://localhost:18089/student.html`. Đây là **server qua SSH tunnel**, không thay thế minh chứng truy cập trực tiếp IP public. Ctrl+C để đóng tunnel.
+
+## 7. Xử lý lỗi trong vài phút
+
+Đọc log đúng project trước, không thử xóa volume:
+
+```powershell
+docker compose --env-file student.env ps
+docker compose --env-file student.env logs --tail 80 app mysql nginx
+```
+
+| Triệu chứng | Cách xử lý đúng |
 |---|---|
-| 01-actions.png | Run trên main có cả hai job xanh |
-| 02-ghcr.png | Package có tag commit SHA và latest |
-| 03-compose-ps.png | Compose ps trên server, không phải local |
-| 04-website.png | Browser hiển thị JSON từ IP server và port cá nhân |
+| Docker engine chưa chạy | Bật Docker Desktop, chạy lại `docker version` |
+| MySQL unhealthy / Access denied | Dừng sửa env tùy ý; tài khoản volume và env đang lệch. Nhờ quản trị dùng mật khẩu root hiện có, sao lưu rồi `ALTER USER` riêng app_user theo env; giữ dữ liệu |
+| 502 ngay sau deploy | Chờ app khởi động, retry curl; nếu còn lỗi đọc log app |
+| App đã chạy nhưng Nginx 502 | `docker compose --env-file student.env restart nginx` |
+| Port already allocated | Kiểm tra chủ dịch vụ, không dừng container người khác; chọn cổng riêng và cập nhật env/URL/firewall đồng bộ |
+| Build không tải dependency | Xem log đầu tiên, kiểm tra mạng; Maven Central đã cấu hình. Lỗi tải tạm thời thì Re-run failed jobs |
+| SSH Permission denied | Kiểm tra đúng private key, public key trên server, SERVER_USER/HOST/SSH_KEY |
+| Curl trong server được, ngoài máy timeout | Kiểm tra security group/firewall TCP 8089 tại nhà cung cấp |
 
-Sau khi đủ ảnh, chạy ở local:
+Kiểm tra xác thực MySQL thực sự (chạy **trong Linux server**, không dán trực tiếp vào PowerShell):
+
+```bash
+cd ~/devops
+docker compose --env-file student.env exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u"$MYSQL_USER" -D"$MYSQL_DATABASE" -Nse "SELECT COUNT(*) FROM labs"'
+```
+
+Kết quả phải là `8`. Sau khi mật khẩu đã được sửa trong MySQL, chỉ cần restart app/nginx; không xóa database. Nếu root trong env không đăng nhập được, cần dùng mật khẩu quản trị thật đã lưu từ lúc tạo volume; không suy ra rằng database hỏng.
+
+## 8. Minh chứng và nộp bài (40–60 phút)
+
+Bốn ảnh bạn cung cấp được giữ nguyên trong `screenshots/user-provided/`: ba ảnh thuộc repo cũ/SHA `0a2a190...`, ảnh website là localhost/SHA `3cfb43e...`. Chúng là tư liệu tham khảo, không chứng minh bản triển khai hiện tại. Xem `submission-content/verification.txt` cho kết quả kiểm tra và giới hạn thực tế.
+
+Chụp bốn ảnh mới cùng một lần triển khai:
+
+| File trong screenshots/ | Nội dung |
+|---|---|
+| 01-actions.png | Run repo hiện tại trên main, hai job xanh |
+| 02-ghcr.png | Package repo hiện tại có latest và SHA của run đó |
+| 03-compose-ps.png | Terminal SSH server, đúng project và image SHA |
+| 04-website.png | Browser có IP server:8089, sinh viên/SHA/8 phòng lab |
+
+Không sửa nội dung ảnh để giả thành IP/SHA khác. Ảnh qua tunnel phải ghi rõ tunnel; ảnh localhost không thay thế ảnh public.
+
+Sau khi lưu ảnh đúng tên, chạy PowerShell tại thư mục dự án:
 
 ```powershell
 New-Item -ItemType Directory -Force submission-content | Out-Null
 Copy-Item screenshots\*.png submission-content\
 git add README.md screenshots submission-content
-git commit -m "Add submission guide and evidence"
+git commit -m "Add submission evidence"
 git push origin main
 ```
 
-Chờ pipeline cuối xanh trước hạn; đối chiếu ảnh với run/SHA được chụp. Nộp link repo public và thư mục bài lên RAIA; giữ website chạy tới khi có điểm. Không đưa private key vào gói nộp.
+Chờ run cuối xanh. Ảnh là bằng chứng của SHA được chụp trước commit ảnh; giữ link run đó trong hồ sơ, không sửa SHA trên ảnh. Nộp link repo và thư mục minh chứng lên RAIA/LMS bằng tài khoản sinh viên; push GitHub không tự nộp LMS. Giữ server chạy đến khi chấm.
 
-Nếu đề yêu cầu tải thư mục từ server bằng SFTP, vẫn dùng Terminal IntelliJ. Tạo thư mục nhận ngoài repository, thay đường dẫn key bằng đường dẫn thật:
+Nếu đề yêu cầu tải thư mục từ server bằng SFTP, dùng terminal IntelliJ sau khi server đã cập nhật:
 
 ```powershell
 New-Item -ItemType Directory -Force ..\bai-nop | Out-Null
 Set-Location ..\bai-nop
-sftp -i "C:\DUONG_DAN_DAY_DU\deploy_key" USER_SERVER@IP_SERVER
+sftp -i "C:\Users\TRONG TIN\Downloads\devops-final-app-de001\devops-final-app-de001\deploy_key" root@221.121.5.186
 ```
 
-Ở dấu nhắc sftp>, thay TEN_REPO rồi chạy:
+Trong `sftp>`:
 
 ```text
-get -r TEN_REPO
+get -r devops
 bye
 ```
 
-Server phải có commit minh chứng mới nhất trước khi tải. Sau đó dùng lệnh cd phần 1 để về dự án.
-
-## Checklist trước khi nộp
-
-- Repo public, đúng tên/main, student.env đủ và đúng quy ước.
-- Dockerfile hai stage, Gradle + JDK 21 → JRE 21, non-root, APP_VERSION, EXPOSE, ENTRYPOINT exec. Dự án hiện dùng Gradle 8.14 với JDK 21.
-- Compose context `.` vì Dockerfile cùng thư mục; DB qua biến, chỉ public Nginx, mount read-only.
-- Hai job xanh, image SHA/latest, deploy không build trên server.
-- Website server trả JSON, đủ bốn ảnh, submission-content và link RAIA trước hạn.
-- Mở `/student.html` để chụp thông tin sinh viên, SHA và 8 phòng lab; đối chiếu SHA với run Actions. `/` vẫn chuyển tới `/api/labs`.
-
+Không đưa private key hoặc bản sao lưu database vào gói nộp.
